@@ -19,11 +19,12 @@ use Symfony\Component\Form\ChoiceList\ArrayChoiceList;
 abstract class AbstractChoiceLoader implements ChoiceLoaderInterface
 {
     /**
-     * The loaded choice list.
+     * The stored choices.
      *
-     * @var ArrayChoiceList
+     * @var iterable
      */
-    private $choiceList;
+    private $choices;
+
 
     /**
      * @final
@@ -32,7 +33,11 @@ abstract class AbstractChoiceLoader implements ChoiceLoaderInterface
      */
     public function loadChoiceList(callable $value = null)
     {
-        return $this->choiceList ?? ($this->choiceList = new ArrayChoiceList($this->loadChoices(), $value));
+        if (!isset($this->choices)) {
+            $this->choices = $this->loadChoices();
+        }
+
+        return new ArrayChoiceList($this->choices, $value);
     }
 
     /**
@@ -42,10 +47,6 @@ abstract class AbstractChoiceLoader implements ChoiceLoaderInterface
     {
         if (!$values) {
             return [];
-        }
-
-        if ($this->choiceList) {
-            return $this->choiceList->getChoicesForValues($values);
         }
 
         return $this->doLoadChoicesForValues($values, $value);
@@ -60,16 +61,15 @@ abstract class AbstractChoiceLoader implements ChoiceLoaderInterface
             return [];
         }
 
-        if ($value) {
-            // if a value callback exists, use it
-            return array_map($value, $choices);
+        // doLoadValuesForChoices() does not allow passing the $value callback
+        // for loadChoiceList() so workaround with array_map().
+        $values = $this->doLoadValuesForChoices($choices);
+
+        if (null === $value) {
+            return $values;
         }
 
-        if ($this->choiceList) {
-            return $this->choiceList->getValuesForChoices($choices);
-        }
-
-        return $this->doLoadValuesForChoices($choices);
+        return array_map($value, $values);
     }
 
     abstract protected function loadChoices(): iterable;
