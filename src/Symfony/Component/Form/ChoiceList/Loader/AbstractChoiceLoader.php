@@ -25,7 +25,6 @@ abstract class AbstractChoiceLoader implements ChoiceLoaderInterface
      */
     private $choices;
 
-
     /**
      * @final
      *
